@@ -1,0 +1,4 @@
+[package]
+name = "rasterust"
+version = "0.0.1"
+authors = [ "Andrew Comminos <andrew@comminos.com>" ]
