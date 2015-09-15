@@ -6,26 +6,39 @@ pub struct Vector([f32; 4]);
 pub struct Matrix([f32; 16]);
 
 impl Vector {
-    fn nth(&self, idx: usize) -> f32 {
-        match self  {
-            &Vector(ref data) => data[idx]
+    fn nth(&self, idx: usize) -> Option<f32> {
+        match (self, idx)  {
+            (&Vector(ref data), 0...3) => Some(data[idx]),
+            _ => None
         }
     }
 
     fn x(&self) -> f32 {
-        self.nth(0)
+        match self.nth(0) {
+            Some(s) => s,
+            _ => panic!()
+        }
     }
 
     fn y(&self) -> f32 {
-        self.nth(1)
+        match self.nth(1) {
+            Some(s) => s,
+            _ => panic!()
+        }
     }
 
     fn z(&self) -> f32 {
-        self.nth(2)
+        match self.nth(2) {
+            Some(s) => s,
+            _ => panic!()
+        }
     }
 
     fn w(&self) -> f32 {
-        self.nth(3)
+        match self.nth(3) {
+            Some(s) => s,
+            _ => panic!()
+        }
     }
 
     fn dot(&self, vec: &Vector) -> f32 {
@@ -34,6 +47,13 @@ impl Vector {
                 a.iter().zip(b.iter()).fold(0., |sum, (i, j)| sum + (i * j))
             }
         }
+    }
+
+    fn sub(&self, vec: &Vector) -> Vector {
+        Vector([self.x() - vec.x(),
+                self.y() - vec.y(),
+                self.z() - vec.z(),
+                self.w() - vec.w()])
     }
 }
 
@@ -55,12 +75,12 @@ impl Matrix {
     fn scale(scale: &Vector) -> Matrix {
         Matrix([scale.x(), 0., 0., 0.,
                 0., scale.y(), 0., 0.,
-                0., 0., scale.z(), 0,
+                0., 0., scale.z(), 0.,
                 0., 0., 0., scale.w()])
     }
 
     fn apply(&self, vec: &Vector) -> Vector {
-        let mut data: [f32; 4] = [0; 4];
+        let mut data: [f32; 4] = [0.; 4];
         for i in 0..3 {
             data[i] = self.row(i).dot(vec);
         }
@@ -79,8 +99,8 @@ impl Matrix {
     }
 
     fn col(&self, col: usize) -> Vector {
-        match (self, col) {
-            (&Matrix(ref data), 0...3) => {
+        match (self) {
+            &Matrix(ref data) => {
                 Vector([data[col],
                         data[col + 4],
                         data[col + 8],
@@ -91,10 +111,10 @@ impl Matrix {
 
     // Produces the matrix AB, where mat is A and self is B
     fn compose(&self, mat: &Matrix) -> Matrix {
-        let mut out: [f32; 16];
+        let mut out: [f32; 16] = [0.; 16];
         for j in 0..3 {
             for i in 0..3 {
-                out[i][j] = mat.row(j).dot(self.col(i));
+                out[i * j] = mat.row(j).dot(&self.col(i));
             }
         }
         Matrix(out)
@@ -110,6 +130,14 @@ pub struct Rect {
 
 // A primitive triangle.
 pub struct Triangle(Vector, Vector, Vector);
+
+impl Triangle {
+    fn vertices(&self) -> Vec<&Vector> {
+        match self {
+            &Triangle(ref a, ref b, ref c) => vec![a, b, c]
+        }
+    }
+}
 
 pub struct Mesh(Vec<Triangle>);
 
@@ -140,11 +168,35 @@ impl Model {
     }
 }
 
+// A perspective camera.
 pub struct Camera {
     pos: Vector,
     z_near: f32,
     z_far: f32,
     fov: f32,
+    ratio: f32,
+}
+
+impl Camera {
+    // Projects the vector into normalized screen coordinates.
+    // Does not perform any clipping.
+    // TODO(acomminos): support fov
+    fn project_vector(&self, v: &Vector) -> Vector {
+        let x = -v.x()/(self.ratio * v.z());
+        let y = -v.y()/v.z();
+        let z = (v.z() - self.z_near)/(self.z_far - self.z_near);
+        Vector([x, y, z, 1.])
+    }
+
+    fn project_triangle(&self, tri: &Triangle) -> Triangle {
+        match tri {
+            &Triangle(ref a, ref b, ref c) => {
+                Triangle(self.project_vector(a),
+                         self.project_vector(b),
+                         self.project_vector(c))
+            }
+        }
+    }
 }
 
 pub struct Scene {
@@ -153,19 +205,24 @@ pub struct Scene {
 }
 
 impl Scene {
-    fn render(&self, rt: &RenderTarget) {
-        /*
-        let mut color: Vec<u32> = &rt.color;
-        let mut depth: Vec<f32> = &rt.depth;
+    fn render(&self, rt: &mut RenderTarget) {
+        //let mut color: &Buffer<u32> = &rt.color;
+        //let mut depth: &Buffer<f32> = &rt.depth;
 
         for m in &self.models {
             let mat = &m.get_transform();
-            let mesh = &m.mesh;
+            match &m.mesh {
+                &Mesh(ref triangles) => {
+                    for t in triangles {
+                        raster::rasterize_barycentric_ccw(t, rt, &self.camera);
+                        // TODO
+                    }
+                }
+            }
             //let x = -v.x/v.z;
             //let y = v.y/v.z;
             //let z = (v.z - z_near)/(z_far - z_near)
         }
-        */
     }
 }
 
