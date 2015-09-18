@@ -6,6 +6,10 @@ pub struct Vector([f32; 4]);
 pub struct Matrix([f32; 16]);
 
 impl Vector {
+    pub fn new(x: f32, y: f32, z: f32) -> Vector {
+        Vector([x, y, z, 1.])
+    }
+
     fn nth(&self, idx: usize) -> Option<f32> {
         match (self, idx)  {
             (&Vector(ref data), 0...3) => Some(data[idx]),
@@ -206,9 +210,6 @@ pub struct Scene {
 
 impl Scene {
     fn render(&self, rt: &mut RenderTarget) {
-        //let mut color: &Buffer<u32> = &rt.color;
-        //let mut depth: &Buffer<f32> = &rt.depth;
-
         for m in &self.models {
             let mat = &m.get_transform();
             match &m.mesh {
@@ -219,9 +220,6 @@ impl Scene {
                     }
                 }
             }
-            //let x = -v.x/v.z;
-            //let y = v.y/v.z;
-            //let z = (v.z - z_near)/(z_far - z_near)
         }
     }
 }
@@ -233,7 +231,7 @@ pub struct Buffer<T> {
 }
 
 impl <T> Buffer<T> {
-    fn create<S>(width: usize, height: usize) -> Buffer<S> {
+    pub fn create(width: usize, height: usize) -> Buffer<T> {
         let mut data = Vec::new();
         data.reserve(width * height);
         Buffer {
@@ -254,7 +252,7 @@ pub struct RenderTarget {
 }
 
 impl RenderTarget {
-    fn create(width: usize, height: usize) -> RenderTarget {
+    pub fn create(width: usize, height: usize) -> RenderTarget {
         RenderTarget {
             width: width,
             height: height,
