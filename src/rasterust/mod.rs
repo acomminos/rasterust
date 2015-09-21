@@ -265,8 +265,9 @@ impl Scene {
             match &m.mesh {
                 &Mesh(ref triangles) => {
                     for t in triangles {
-                        raster::rasterize_barycentric_ccw(t, rt, &self.camera);
-                        // TODO
+                        // FIXME(acomminos): placeholder
+                        let shader = ColorShader;
+                        raster::rasterize_barycentric_ccw(t, rt, &self.camera, &shader);
                     }
                 }
             }
@@ -329,14 +330,57 @@ impl RenderTarget {
     }
 
     pub fn print_ascii(&self) {
+        print!["┌──"];
+        for _ in 1..(self.color.width - 1) {
+            print!["──"];
+        }
+        println!["──┐"];
+
         for y in 0..self.color.height {
+            print!["│"];
             for x in 0..self.color.width {
                 match self.color.get(x, y) {
-                    &0 => print!["[ ]"],
-                    &_ => print!["[#]"],
+                    &0 => print!["  "],
+                    &_ => print!["██"],
                 }
             }
-            print!["\n"];
+            println!["│"];
         }
+
+        print!["└──"];
+        for _ in 1..(self.color.width - 1) {
+            print!["──"];
+        }
+        println!["──┘"];
+    }
+}
+
+// A 32-bit ARGB colour.
+struct Color {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32
+}
+
+impl Color {
+    fn to_argb32(&self) -> (u8, u8, u8, u8) {
+        ((self.r * (u8::max_value() as f32)) as u8,
+         (self.g * (u8::max_value() as f32)) as u8,
+         (self.b * (u8::max_value() as f32)) as u8,
+         (self.a * (u8::max_value() as f32)) as u8)
+    }
+}
+
+pub trait Shader {
+    fn shade(&self, bary: (f32, f32, f32)) -> Color;
+}
+
+// A basic white color shader. FIXME(acomminos): placeholder.
+struct ColorShader;
+
+impl Shader for ColorShader {
+    fn shade(&self, (w0, w1, w2): (f32, f32, f32)) -> Color {
+        Color { r: 1., g: 1., b: 1., a: 1. }
     }
 }

@@ -2,7 +2,7 @@ use rasterust::*;
 
 // Rasterizes the given triangle onto the RenderTarget.
 // The points of the given triangle assume that the front face is counter-clockwise.
-pub fn rasterize_barycentric_ccw(tri: &Triangle, target: &mut RenderTarget, camera: &Camera) {
+pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, camera: &Camera, shader: &T) where T: Shader {
     match camera.project_triangle(tri) {
         Triangle(a, b, c) => {
             let ab = b.sub(&a);
@@ -24,9 +24,8 @@ pub fn rasterize_barycentric_ccw(tri: &Triangle, target: &mut RenderTarget, came
                     println!["pixel hit: ({}, {} [NDC: {}, {}]), area: {}, coords: ({}, {}, {})", x, y, px, py, area, w0, w1, w2];
                     if w0 >= 0. && w1 >= 0. && w2 >= 0. {
                         // point is in the left half-space of all 3 vectors, thus interior
-                        // TODO(acomminos): depth testing, shading
-                        //shade(target, (w0, w1, w2))
-                        target.paint((x, y), (255u8, 255u8, 255u8, 255u8));
+                        // TODO(acomminos): depth testing
+                        target.paint((x, y), shader.shade((w0, w1, w2)).to_argb32());
                     }
                 }
             }
