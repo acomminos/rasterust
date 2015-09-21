@@ -332,8 +332,8 @@ impl RenderTarget {
         for y in 0..self.color.height {
             for x in 0..self.color.width {
                 match self.color.get(x, y) {
-                    &0 => print!["0"],
-                    &_ => print!["1"],
+                    &0 => print!["[ ]"],
+                    &_ => print!["[#]"],
                 }
             }
             print!["\n"];

@@ -22,7 +22,7 @@ pub fn rasterize_barycentric_ccw(tri: &Triangle, target: &mut RenderTarget, came
                                         ((ca.x() * (py - c.y())) - (ca.y() * (px - c.x()))) / area,
                                         ((ab.x() * (py - a.y())) - (ab.y() * (px - a.x()))) / area);
                     println!["pixel hit: ({}, {} [NDC: {}, {}]), area: {}, coords: ({}, {}, {})", x, y, px, py, area, w0, w1, w2];
-                    if w0 > 0. && w1 > 0. && w2 > 0. {
+                    if w0 >= 0. && w1 >= 0. && w2 >= 0. {
                         // point is in the left half-space of all 3 vectors, thus interior
                         // TODO(acomminos): depth testing, shading
                         //shade(target, (w0, w1, w2))
