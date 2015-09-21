@@ -1,8 +1,9 @@
 use rasterust::*;
+use rasterust::shader;
 
 // Rasterizes the given triangle onto the RenderTarget.
 // The points of the given triangle assume that the front face is counter-clockwise.
-pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, camera: &Camera, shader: &T) where T: Shader {
+pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, camera: &Camera, shader: &T) where T: shader::Shader {
     match camera.project_triangle(tri) {
         Triangle(a, b, c) => {
             let ab = b.sub(&a);
