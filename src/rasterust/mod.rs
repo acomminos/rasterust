@@ -2,6 +2,7 @@ mod raster;
 mod shader;
 
 use std::ops::Add;
+use std::f32;
 
 // A vector in 4-space.
 pub struct Vector([f32; 4]);
@@ -133,10 +134,10 @@ impl Matrix {
 }
 
 pub struct Rect {
-    top: f32,
-    bottom: f32,
-    left: f32,
-    right: f32,
+    pub top: f32,
+    pub bottom: f32,
+    pub left: f32,
+    pub right: f32,
 }
 
 // A primitive triangle.
@@ -151,6 +152,24 @@ impl Triangle {
         match self {
             &Triangle(ref a, ref b, ref c) => vec![a, b, c]
         }
+    }
+
+    // Returns a bounding box encapsulating the triangle in the XY-plane.
+    fn bounds(&self) -> Rect {
+        let &Triangle(ref a, ref b, ref c) = self;
+        let mut rect = Rect {
+            top: f32::MAX,
+            bottom: f32::MIN,
+            left: f32::MAX,
+            right: f32::MIN,
+        };
+        for i in [a, b, c].iter() {
+            rect.top = rect.top.min(i.x());
+            rect.bottom = rect.bottom.max(i.x());
+            rect.left = rect.left.min(i.y());
+            rect.right = rect.right.max(i.y());
+        }
+        rect
     }
 }
 
@@ -222,7 +241,6 @@ impl Camera {
 
     // Projects the vector into normalized screen coordinates.
     // Does not perform any clipping.
-    // TODO(acomminos): support fov
     fn project_vector(&self, v: &Vector) -> Vector {
         let x = v.x()/(self.ratio * (self.fov / 2.).tan() * v.z());
         let y = v.y()/v.z();
