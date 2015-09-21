@@ -224,7 +224,7 @@ impl Camera {
     // Does not perform any clipping.
     // TODO(acomminos): support fov
     fn project_vector(&self, v: &Vector) -> Vector {
-        let x = v.x()/(self.ratio * v.z());
+        let x = v.x()/(self.ratio * (self.fov / 2.).tan() * v.z());
         let y = v.y()/v.z();
         let z = (v.z() - self.z_near)/(self.z_far - self.z_near);
         Vector([x, y, z, 1.])

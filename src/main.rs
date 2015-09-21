@@ -1,10 +1,11 @@
 mod rasterust;
 
 use rasterust::*;
+use std::f32;
 
 fn main() {
     let mut target = RenderTarget::new(20, 18);
-    let camera = Camera::new(Vector::zero(), Vector::zero(), target.aspect(), 45., 0., 1.);
+    let camera = Camera::new(Vector::zero(), Vector::zero(), target.aspect(), f32::consts::PI/2., 0., 1.);
     let mut scene = Scene::new(camera);
 
     let tri2 = Triangle::new(Vector::new(0., 0., 0.1),
