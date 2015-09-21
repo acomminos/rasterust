@@ -1,6 +1,8 @@
 mod raster;
 mod shader;
 
+use std::ops::Add;
+
 // A vector in 4-space.
 pub struct Vector([f32; 4]);
 // A 4x4 matrix.
@@ -312,7 +314,7 @@ impl <T> Buffer<T> where T: Clone {
 }
 
 // Pixel blend modes.
-enum CompositeMode {
+pub enum CompositeMode {
     SourceOver,
 }
 
@@ -336,9 +338,15 @@ impl RenderTarget {
     }
 
     // Toy painting function to paint the pixel at (x, y) with the 32-bit RGBA
-    // colour represented by (r, g, b, a).
-    pub fn paint(&mut self, pos: (usize, usize), (r, g, b, a): (u8, u8, u8, u8)) {
-        self.color.put(pos, ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | a as u32)
+    // colour provided.
+    pub fn paint(&mut self, (x, y): (usize, usize), src: &Color, op: CompositeMode) {
+        let dest = Color::from_rgba32(self.color.get(x, y));
+        let color = match op {
+            // note: colors here are premultiplied
+            SourceOver => dest.multiply(1. - src.a) + *src
+        };
+        let (r, g, b, a) = color.to_rgba32();
+        self.color.put((x, y), ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | a as u32)
     }
 
     // Checks to see if depth is less than the value stored in the depth buffer.
@@ -385,7 +393,8 @@ impl RenderTarget {
 }
 
 // A 32-bit ARGB colour.
-#[derive(Clone)]
+// Use premultiplied alpha for consistency.
+#[derive(Copy, Clone)]
 pub struct Color {
     r: f32,
     g: f32,
@@ -395,19 +404,48 @@ pub struct Color {
 
 impl Color {
     fn white() -> Color {
-        Color {
-            r: 1.,
-            g: 1.,
-            b: 1.,
-            a: 1.,
-        }
+        Color::new(1., 1., 1., 1.)
     }
 
-    fn to_argb32(&self) -> (u8, u8, u8, u8) {
+    // Create
+    fn new(r: f32, g: f32, b: f32, a: f32) -> Color {
+        Color { r: r, g: g, b: b, a: a }
+    }
+
+    fn from_rgba32(rgba: &u32) -> Color {
+        let max = u8::max_value() as f32;
+        Color::new((((rgba >> 24) & 0xFFu32) as f32)/max,
+                   (((rgba >> 16) & 0xFFu32) as f32)/max,
+                   (((rgba >> 8) & 0xFFu32) as f32)/max,
+                   (((rgba >> 0) & 0xFFu32) as f32)/max)
+
+    }
+
+    fn to_rgba32(&self) -> (u8, u8, u8, u8) {
         ((self.r * (u8::max_value() as f32)) as u8,
          (self.g * (u8::max_value() as f32)) as u8,
          (self.b * (u8::max_value() as f32)) as u8,
          (self.a * (u8::max_value() as f32)) as u8)
     }
+
+    fn unpremultiply(&self) -> Color {
+        Color {
+            r: self.r / self.a,
+            g: self.g / self.a,
+            b: self.b / self.a,
+            a: self.a,
+        }
+    }
+
+    fn multiply(&self, val: f32) -> Color {
+        Color::new(self.r * val, self.g * val, self.b * val, self.a * val)
+    }
 }
 
+impl Add for Color {
+    type Output = Color;
+
+    fn add(self, rhs: Color) -> Color {
+        Color::new(self.r + rhs.r, self.g + rhs.g, self.b + rhs.b, self.a + rhs.a)
+    }
+}
