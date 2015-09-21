@@ -272,8 +272,8 @@ impl Scene {
                 &Mesh(ref triangles) => {
                     for t in triangles {
                         // FIXME(acomminos): placeholder
-                        let shader = ColorShader;
-                        raster::rasterize_barycentric_ccw(t, rt, &self.camera, &shader);
+                        let ph_shader = SolidColorShader(Color::white());
+                        raster::rasterize_barycentric_ccw(t, rt, &self.camera, &ph_shader);
                     }
                 }
             }
@@ -379,6 +379,7 @@ impl RenderTarget {
 }
 
 // A 32-bit ARGB colour.
+#[derive(Clone)]
 struct Color {
     r: f32,
     g: f32,
@@ -387,6 +388,15 @@ struct Color {
 }
 
 impl Color {
+    fn white() -> Color {
+        Color {
+            r: 1.,
+            g: 1.,
+            b: 1.,
+            a: 1.,
+        }
+    }
+
     fn to_argb32(&self) -> (u8, u8, u8, u8) {
         ((self.r * (u8::max_value() as f32)) as u8,
          (self.g * (u8::max_value() as f32)) as u8,
@@ -399,11 +409,13 @@ pub trait Shader {
     fn shade(&self, bary: (f32, f32, f32)) -> Color;
 }
 
-// A basic white color shader. FIXME(acomminos): placeholder.
-struct ColorShader;
+// A basic color shader, outputting a constant colour.
+struct SolidColorShader(Color);
 
-impl Shader for ColorShader {
-    fn shade(&self, (w0, w1, w2): (f32, f32, f32)) -> Color {
-        Color { r: 1., g: 1., b: 1., a: 1. }
+impl Shader for SolidColorShader {
+    fn shade(&self, bary: (f32, f32, f32)) -> Color {
+        match self {
+            &SolidColorShader(ref color) => color.clone()
+        }
     }
 }
