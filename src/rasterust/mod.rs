@@ -202,10 +202,10 @@ impl Model {
 pub struct Camera {
     pos: Vector,
     rot: Vector,
-    z_near: f32,
-    z_far: f32,
-    fov: f32,
-    ratio: f32,
+    z_near: f32, // The near z-clipping plane.
+    z_far: f32, // The far z-clipping plane.
+    fov: f32, // The horizontal field of view, in radians.
+    ratio: f32, // Screen aspect ratio of width/height.
 }
 
 impl Camera {
