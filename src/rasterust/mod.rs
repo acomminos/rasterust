@@ -353,6 +353,11 @@ impl RenderTarget {
         return false;
     }
 
+    // Returns the ratio of width:height.
+    pub fn aspect(&self) -> f32 {
+        (self.width as f32) / (self.height as f32)
+    }
+
     pub fn print_ascii(&self) {
         print!["┌──"];
         for _ in 1..(self.color.width - 1) {

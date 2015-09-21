@@ -3,8 +3,8 @@ mod rasterust;
 use rasterust::*;
 
 fn main() {
-    let mut target = RenderTarget::new(20, 15);
-    let camera = Camera::new(Vector::zero(), Vector::zero(), 1., 45., 0., 1.);
+    let mut target = RenderTarget::new(20, 18);
+    let camera = Camera::new(Vector::zero(), Vector::zero(), target.aspect(), 45., 0., 1.);
     let mut scene = Scene::new(camera);
 
     let tri2 = Triangle::new(Vector::new(0., 0., 0.1),
