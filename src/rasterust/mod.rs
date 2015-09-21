@@ -330,7 +330,7 @@ impl RenderTarget {
             width: width,
             height: height,
             color: Buffer::<u32>::new(width, height, 0u32),
-            depth: Buffer::<f32>::new(width, height, 0.),
+            depth: Buffer::<f32>::new(width, height, 1.),
         }
     }
 
@@ -338,6 +338,18 @@ impl RenderTarget {
     // colour represented by (r, g, b, a).
     pub fn paint(&mut self, pos: (usize, usize), (r, g, b, a): (u8, u8, u8, u8)) {
         self.color.put(pos, ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | a as u32)
+    }
+
+    // Checks to see if depth is less than the value stored in the depth buffer.
+    // If so, returns true and stores the depth value.
+    // The depth buffer stores floating-point values in the range [0, 1]. By
+    // default, it is initialized to 1.
+    pub fn check_depth(&mut self, (x, y): (usize, usize), depth: f32) -> bool {
+        if depth < *self.depth.get(x, y) {
+            self.depth.put((x, y), depth);
+            return true;
+        }
+        return false;
     }
 
     pub fn print_ascii(&self) {

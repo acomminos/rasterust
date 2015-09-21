@@ -22,11 +22,11 @@ pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, c
                                         ((ca.x() * (py - c.y())) - (ca.y() * (px - c.x()))) / area,
                                         ((ab.x() * (py - a.y())) - (ab.y() * (px - a.x()))) / area);
                     if w0 >= 0. && w1 >= 0. && w2 >= 0. {
+                        // point is in the left half-space of all 3 vectors, thus interior
                         println!["pixel hit: ({}, {} [NDC: {}, {}]), area: {}, coords: ({}, {}, {})", x, y, px, py, area, w0, w1, w2];
                         // interpolate z using barycentric parameters
                         let pz = (a.z() * w0) + (b.z() * w1) + (c.z() * w2);
-                        if camera.contains_point((px, py, pz)) {
-                            // point is in the left half-space of all 3 vectors, thus interior
+                        if camera.contains_point((px, py, pz)) && target.check_depth((x, y), pz) {
                             target.paint((x, y), shader.shade((w0, w1, w2)).to_argb32());
                         }
                     }
