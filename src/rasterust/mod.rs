@@ -10,6 +10,10 @@ impl Vector {
         Vector([x, y, z, 1.])
     }
 
+    pub fn zero() -> Vector {
+        Vector([0., 0., 0., 0.])
+    }
+
     fn nth(&self, idx: usize) -> Option<f32> {
         match (self, idx)  {
             (&Vector(ref data), 0...3) => Some(data[idx]),
@@ -136,6 +140,10 @@ pub struct Rect {
 pub struct Triangle(Vector, Vector, Vector);
 
 impl Triangle {
+    pub fn new(a: Vector, b: Vector, c: Vector) -> Triangle {
+        Triangle(a, b, c)
+    }
+
     fn vertices(&self) -> Vec<&Vector> {
         match self {
             &Triangle(ref a, ref b, ref c) => vec![a, b, c]
@@ -145,6 +153,12 @@ impl Triangle {
 
 pub struct Mesh(Vec<Triangle>);
 
+impl Mesh {
+    pub fn new(tris: Vec<Triangle>) -> Mesh {
+        Mesh(tris)
+    }
+}
+
 pub struct Model {
     mesh: Mesh,
     pos: Vector,
@@ -153,6 +167,15 @@ pub struct Model {
 }
 
 impl Model {
+    pub fn new(mesh: Mesh) -> Model {
+        Model {
+            mesh: mesh,
+            pos: Vector::zero(),
+            scale: Vector::new(1., 1., 1.),
+            rot: Vector::zero(),
+        }
+    }
+
     fn rotate(&mut self, rotation: &Vector) {
         // TODO
     }
@@ -175,6 +198,7 @@ impl Model {
 // A perspective camera.
 pub struct Camera {
     pos: Vector,
+    rot: Vector,
     z_near: f32,
     z_far: f32,
     fov: f32,
@@ -182,12 +206,23 @@ pub struct Camera {
 }
 
 impl Camera {
+    pub fn new(pos: Vector, rot: Vector, aspect: f32, fov: f32, near: f32, far: f32) -> Camera {
+        Camera {
+            pos: pos,
+            rot: rot,
+            ratio: aspect,
+            fov: fov,
+            z_near: near,
+            z_far: far
+        }
+    }
+
     // Projects the vector into normalized screen coordinates.
     // Does not perform any clipping.
     // TODO(acomminos): support fov
     fn project_vector(&self, v: &Vector) -> Vector {
-        let x = -v.x()/(self.ratio * v.z());
-        let y = -v.y()/v.z();
+        let x = v.x()/(self.ratio * v.z());
+        let y = v.y()/v.z();
         let z = (v.z() - self.z_near)/(self.z_far - self.z_near);
         Vector([x, y, z, 1.])
     }
@@ -209,7 +244,22 @@ pub struct Scene {
 }
 
 impl Scene {
-    fn render(&self, rt: &mut RenderTarget) {
+    pub fn new(camera: Camera) -> Scene {
+        Scene {
+            camera: camera,
+            models: vec![]
+        }
+    }
+
+    pub fn camera<'a>(&'a self) -> &'a Camera {
+        &self.camera
+    }
+
+    pub fn add_model(&mut self, model: Model) {
+        self.models.push(model);
+    }
+
+    pub fn render(&self, rt: &mut RenderTarget) {
         for m in &self.models {
             let mat = &m.get_transform();
             match &m.mesh {
@@ -230,15 +280,26 @@ pub struct Buffer<T> {
     data: Vec<T>,
 }
 
-impl <T> Buffer<T> {
-    pub fn create(width: usize, height: usize) -> Buffer<T> {
-        let mut data = Vec::new();
-        data.reserve(width * height);
+impl <T> Buffer<T> where T: Clone {
+    pub fn new(width: usize, height: usize, initial: T) -> Buffer<T> {
+        let mut data: Vec<T> = Vec::with_capacity(width * height);
+        // FIXME(acomminos): find more idiomatic way to do this
+        for i in 0..(width * height) {
+            data.push(initial.clone());
+        }
         Buffer {
             width: width,
             height: height,
             data: data,
         }
+    }
+
+    pub fn put(&mut self, (x, y): (usize, usize), val: T) {
+        self.data[x + (y * self.width)] = val;
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> &T {
+        &self.data[x + (y * self.width)]
     }
 }
 
@@ -252,12 +313,30 @@ pub struct RenderTarget {
 }
 
 impl RenderTarget {
-    pub fn create(width: usize, height: usize) -> RenderTarget {
+    pub fn new(width: usize, height: usize) -> RenderTarget {
         RenderTarget {
             width: width,
             height: height,
-            color: Buffer::<u32>::create(width, height),
-            depth: Buffer::<f32>::create(width, height),
+            color: Buffer::<u32>::new(width, height, 0u32),
+            depth: Buffer::<f32>::new(width, height, 0.),
+        }
+    }
+
+    // Toy painting function to paint the pixel at (x, y) with the 32-bit RGBA
+    // colour represented by (r, g, b, a).
+    pub fn paint(&mut self, pos: (usize, usize), (r, g, b, a): (u8, u8, u8, u8)) {
+        self.color.put(pos, ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | a as u32)
+    }
+
+    pub fn print_ascii(&self) {
+        for y in 0..self.color.height {
+            for x in 0..self.color.width {
+                match self.color.get(x, y) {
+                    &0 => print!["0"],
+                    &_ => print!["1"],
+                }
+            }
+            print!["\n"];
         }
     }
 }
