@@ -8,7 +8,7 @@ pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, c
             let ab = b.sub(&a);
             let bc = c.sub(&b);
             let ca = a.sub(&c);
-            let area: f32 = ((ab.x() * bc.y()) - (ab.y() * bc.x()))/2.;
+            let area: f32 = (ab.x() * bc.y()) - (ab.y() * bc.x());
             println!["ab: ({}, {}), bc: ({}, {}), ca: ({}, {})", ab.x(), ab.y(), bc.x(), bc.y(), ca.x(), ca.y()];
             for y in 0..target.height {
                 for x in 0..target.width {
@@ -21,11 +21,14 @@ pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, c
                     let (w0, w1, w2) = (((bc.x() * (py - b.y())) - (bc.y() * (px - b.x()))) / area,
                                         ((ca.x() * (py - c.y())) - (ca.y() * (px - c.x()))) / area,
                                         ((ab.x() * (py - a.y())) - (ab.y() * (px - a.x()))) / area);
-                    println!["pixel hit: ({}, {} [NDC: {}, {}]), area: {}, coords: ({}, {}, {})", x, y, px, py, area, w0, w1, w2];
                     if w0 >= 0. && w1 >= 0. && w2 >= 0. {
-                        // point is in the left half-space of all 3 vectors, thus interior
-                        // TODO(acomminos): depth testing
-                        target.paint((x, y), shader.shade((w0, w1, w2)).to_argb32());
+                        println!["pixel hit: ({}, {} [NDC: {}, {}]), area: {}, coords: ({}, {}, {})", x, y, px, py, area, w0, w1, w2];
+                        // interpolate z using barycentric parameters
+                        let pz = (a.z() * w0) + (b.z() * w1) + (c.z() * w2);
+                        if camera.contains_point((px, py, pz)) {
+                            // point is in the left half-space of all 3 vectors, thus interior
+                            target.paint((x, y), shader.shade((w0, w1, w2)).to_argb32());
+                        }
                     }
                 }
             }

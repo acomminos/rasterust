@@ -236,6 +236,12 @@ impl Camera {
             }
         }
     }
+
+    fn contains_point(&self, (x, y, z): (f32, f32, f32)) -> bool {
+        x >= -1. && x <= 1. &&
+        y >= -1. && y <= 1. &&
+        z >= -1. && z <= 1.
+    }
 }
 
 pub struct Scene {
@@ -302,6 +308,11 @@ impl <T> Buffer<T> where T: Clone {
     pub fn get(&self, x: usize, y: usize) -> &T {
         &self.data[x + (y * self.width)]
     }
+}
+
+// Pixel blend modes.
+enum CompositeMode {
+    SourceOver,
 }
 
 // A standard render target with a ARGB color buffer and floating point depth
