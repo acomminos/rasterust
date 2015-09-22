@@ -2,6 +2,7 @@ mod raster;
 mod shader;
 
 use std::ops::Add;
+use std::ops::Mul;
 use std::f32;
 
 // A vector in 4-space.
@@ -120,13 +121,17 @@ impl Matrix {
             }
         }
     }
+}
 
-    // Produces the matrix AB, where mat is A and self is B
-    fn compose(&self, mat: &Matrix) -> Matrix {
+impl Mul for Matrix {
+    type Output = Matrix;
+
+    // Produces the matrix AB.
+    fn mul(self, rhs: Matrix) -> Matrix {
         let mut out: [f32; 16] = [0.; 16];
         for j in 0..3 {
             for i in 0..3 {
-                out[i * j] = mat.row(j).dot(&self.col(i));
+                out[i * j] = self.row(j).dot(&rhs.col(i));
             }
         }
         Matrix(out)
@@ -241,6 +246,8 @@ impl Camera {
 
     // Projects the vector into normalized screen coordinates.
     // Does not perform any clipping.
+    // TODO: replace this with a simple function returning a matrix to be used
+    // in a homogenous coordinate system
     fn project_vector(&self, v: &Vector) -> Vector {
         let x = v.x()/(self.ratio * (self.fov / 2.).tan() * v.z());
         let y = v.y()/v.z();
@@ -288,15 +295,14 @@ impl Scene {
 
     pub fn render(&self, rt: &mut RenderTarget) {
         for m in &self.models {
-            let mat = &m.get_transform();
-            match &m.mesh {
-                &Mesh(ref triangles) => {
-                    for t in triangles {
-                        // FIXME(acomminos): placeholder
-                        let ph_shader = shader::SolidColorShader(Color::white());
-                        raster::rasterize_barycentric_ccw(t, rt, &self.camera, &ph_shader);
-                    }
-                }
+            let model_transform = &m.get_transform();
+            let &Mesh(ref triangles) = &m.mesh;
+            for t in triangles {
+                // FIXME(acomminos): placeholder
+                let ph_shader = shader::SolidColorShader(Color::white());
+                // TODO(acomminos): use model_transform
+                let t_proj = self.camera.project_triangle(t);
+                raster::rasterize_barycentric_ccw(&t_proj, rt, &self.camera, &ph_shader);
             }
         }
     }

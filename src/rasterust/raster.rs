@@ -2,9 +2,10 @@ use rasterust::*;
 use rasterust::shader;
 
 // Rasterizes the given triangle onto the RenderTarget.
-// The points of the given triangle assume that the front face is counter-clockwise.
+// The given triangle is expected to be wound counter-clockwise and be in
+// normalized device coordinates.
 pub fn rasterize_barycentric_ccw<T>(tri: &Triangle, target: &mut RenderTarget, camera: &Camera, shader: &T) where T: shader::Shader {
-    let Triangle(a, b, c) = camera.project_triangle(tri);
+    let &Triangle(ref a, ref b, ref c) = tri;
     let (ab, bc, ca) = (b.sub(&a), c.sub(&b), a.sub(&c));
     let area: f32 = (ab.x() * bc.y()) - (ab.y() * bc.x());
     println!["ab: ({}, {}), bc: ({}, {}), ca: ({}, {})", ab.x(), ab.y(), bc.x(), bc.y(), ca.x(), ca.y()];
