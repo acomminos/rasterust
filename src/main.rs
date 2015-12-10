@@ -4,12 +4,12 @@ use rasterust::*;
 use std::f32;
 
 fn main() {
-    let mut target = RenderTarget::new(80, 20);
+    let mut target = RenderTarget::new(40, 20);
     let camera = Camera::new(Vector::zero(), Vector::zero(), target.aspect(), f32::consts::PI/2., 0., 20.);
     let mut scene = Scene::new(camera);
 
-    let tri2 = Triangle::new(Vector::new(0., 0., 10.),
-                             Vector::new(500., 500., 10.),
+    let tri2 = Triangle::new(Vector::new(-10., 0., 10.),
+                             Vector::new(700., 500., 10.),
                              Vector::new(0., 500., 5.));
     let tri1 = Triangle::new(Vector::new(1., 1., 2.),
                              Vector::new(1., -1., 2.),

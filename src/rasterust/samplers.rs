@@ -11,8 +11,9 @@ pub struct SimpleMultiSampler(pub u32);
 
 impl Sampler for SimpleMultiSampler {
     fn sample(&self, x: u32, y: u32) -> Vec<(f32, f32, f32)> {
-        let &SimpleMultiSampler(samples) = self;
-        let dimen_samples: u32 = 2u32.pow(samples - 1); // sample uniformly across (x,y) (divide by 2)
+        let &SimpleMultiSampler(sample_pow) = self;
+        let samples: u32 = 2u32.pow(sample_pow);
+        let dimen_samples: u32 = samples / 2; // sample uniformly across (x,y) (divide by 2)
         let interval: f32 = 1f32 / (dimen_samples as f32);
         // offset sampling points by half a tick.
         let x_offset: f32 = (x as f32) + (interval / 2f32);

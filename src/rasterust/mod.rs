@@ -301,7 +301,7 @@ impl Scene {
             for t in triangles {
                 // FIXME(acomminos): placeholder
                 let ph_shader = shader::SolidColorShader(Color::white());
-                let sampler = samplers::SimpleMultiSampler(3);
+                let sampler = samplers::SimpleMultiSampler(2);
                 // TODO(acomminos): use model_transform
                 let t_proj = self.camera.project_triangle(t);
                 raster::rasterize_barycentric_ccw(&t_proj, rt, &self.camera, &sampler, &ph_shader);
@@ -342,80 +342,6 @@ impl <T> Buffer<T> where T: Clone {
 // Pixel blend modes.
 pub enum CompositeMode {
     SourceOver,
-}
-
-// A standard render target with a ARGB color buffer and floating point depth
-// buffer.
-pub struct RenderTarget {
-    width: usize,
-    height: usize,
-    color: Buffer<u32>,
-    depth: Buffer<f32>,
-}
-
-impl RenderTarget {
-    pub fn new(width: usize, height: usize) -> RenderTarget {
-        RenderTarget {
-            width: width,
-            height: height,
-            color: Buffer::<u32>::new(width, height, 0u32),
-            depth: Buffer::<f32>::new(width, height, 1.),
-        }
-    }
-
-    // Toy painting function to paint the pixel at (x, y) with the 32-bit RGBA
-    // colour provided.
-    pub fn paint(&mut self, (x, y): (usize, usize), src: &Color, op: CompositeMode) {
-        let dest = Color::from_rgba32(self.color.get(x, y));
-        let color = match op {
-            // note: colors here are premultiplied
-            SourceOver => dest.multiply(1. - src.a) + *src
-        };
-        let (r, g, b, a) = color.to_rgba32();
-        self.color.put((x, y), ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | a as u32)
-    }
-
-    // Checks to see if depth is less than the value stored in the depth buffer.
-    // If so, returns true and stores the depth value.
-    // The depth buffer stores floating-point values in the range [0, 1]. By
-    // default, it is initialized to 1.
-    pub fn check_depth(&mut self, (x, y): (usize, usize), depth: f32) -> bool {
-        if depth < *self.depth.get(x, y) {
-            self.depth.put((x, y), depth);
-            return true;
-        }
-        return false;
-    }
-
-    // Returns the ratio of width:height.
-    pub fn aspect(&self) -> f32 {
-        (self.width as f32) / (self.height as f32)
-    }
-
-    pub fn print_ascii(&self) {
-        print!["┌──"];
-        for _ in 1..(self.color.width - 1) {
-            print!["──"];
-        }
-        println!["──┐"];
-
-        for y in 0..self.color.height {
-            print!["│"];
-            for x in 0..self.color.width {
-                match self.color.get(x, y) {
-                    &0 => print!["  "],
-                    &_ => print!["██"],
-                }
-            }
-            println!["│"];
-        }
-
-        print!["└──"];
-        for _ in 1..(self.color.width - 1) {
-            print!["──"];
-        }
-        println!["──┘"];
-    }
 }
 
 // A 32-bit ARGB colour.
@@ -479,3 +405,89 @@ impl Add for Color {
         Color::new(self.r + rhs.r, self.g + rhs.g, self.b + rhs.b, self.a + rhs.a)
     }
 }
+
+// A standard render target with a ARGB color buffer and floating point depth
+// buffer.
+pub struct RenderTarget {
+    width: usize,
+    height: usize,
+    color: Buffer<u32>,
+    depth: Buffer<f32>,
+}
+
+impl RenderTarget {
+    pub fn new(width: usize, height: usize) -> RenderTarget {
+        RenderTarget {
+            width: width,
+            height: height,
+            color: Buffer::<u32>::new(width, height, 0u32),
+            depth: Buffer::<f32>::new(width, height, 1.),
+        }
+    }
+
+    // Toy painting function to paint the pixel at (x, y) with the 32-bit RGBA
+    // colour provided.
+    pub fn paint(&mut self, (x, y): (usize, usize), src: &Color, op: CompositeMode) {
+        let dest = Color::from_rgba32(self.color.get(x, y));
+        let color = match op {
+            // note: colors here are premultiplied
+            SourceOver => dest.multiply(1. - src.a) + *src
+        };
+        let (r, g, b, a) = color.to_rgba32();
+        self.color.put((x, y), ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | a as u32)
+    }
+
+    // Checks to see if depth is less than the value stored in the depth buffer.
+    // If so, returns true and stores the depth value.
+    // The depth buffer stores floating-point values in the range [0, 1]. By
+    // default, it is initialized to 1.
+    pub fn check_depth(&mut self, (x, y): (usize, usize), depth: f32) -> bool {
+        if depth < *self.depth.get(x, y) {
+            self.depth.put((x, y), depth);
+            return true;
+        }
+        return false;
+    }
+
+    // Returns the ratio of width:height.
+    pub fn aspect(&self) -> f32 {
+        (self.width as f32) / (self.height as f32)
+    }
+
+    pub fn print_ascii(&self) {
+        print!["┌──"];
+        for _ in 1..(self.color.width - 1) {
+            print!["──"];
+        }
+        println!["──┐"];
+
+        for y in 0..self.color.height {
+            print!["│"];
+            for x in 0..self.color.width {
+                let color = Color::from_rgba32(self.color.get(x, y));
+                let a = color.a;
+                let block = if a == 0. {
+                    "  "
+                } else if a <= 0.25 {
+                    "░░"
+                } else if a <= 0.5 {
+                    "▒▒"
+                } else if a <= 0.75 {
+                    "▓▓"
+                } else {
+                    "██"
+                };
+                print!["{}", block];
+            }
+            println!["│"];
+        }
+
+        print!["└──"];
+        for _ in 1..(self.color.width - 1) {
+            print!["──"];
+        }
+        println!["──┘"];
+    }
+}
+
+
