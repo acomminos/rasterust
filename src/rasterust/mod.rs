@@ -1,5 +1,6 @@
 mod raster;
 mod shader;
+mod samplers;
 
 use std::ops::Add;
 use std::ops::Mul;
@@ -300,9 +301,10 @@ impl Scene {
             for t in triangles {
                 // FIXME(acomminos): placeholder
                 let ph_shader = shader::SolidColorShader(Color::white());
+                let sampler = samplers::SimpleMultiSampler(3);
                 // TODO(acomminos): use model_transform
                 let t_proj = self.camera.project_triangle(t);
-                raster::rasterize_barycentric_ccw(&t_proj, rt, &self.camera, &ph_shader);
+                raster::rasterize_barycentric_ccw(&t_proj, rt, &self.camera, &sampler, &ph_shader);
             }
         }
     }
@@ -429,6 +431,10 @@ pub struct Color {
 impl Color {
     fn white() -> Color {
         Color::new(1., 1., 1., 1.)
+    }
+
+    fn zero() -> Color {
+        Color::new(0., 0., 0., 0.)
     }
 
     // Create
